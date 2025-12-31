@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>年度荒诞档案 // FINAL JUDGMENT</title>
+    <style>
+        /* --- 核心重置 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        :root {
+            --c-black: #050505;
+            --c-white: #ffffff;
+            --c-acid: #ccff00;
+            --c-blue: #0000ff;
+            --c-red: #ff0000;
+            --c-blood: #8a0000;
+        }
+
+        body {
+            background-color: var(--c-black);
+            font-family: -apple-system, BlinkMacSystemFont, "Arial Black", "Impact", sans-serif;
+            overflow: hidden;
+            color: var(--c-white);
+        }
+
+        /* --- 纹理层 --- */
+        .texture-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 2px 100%;
+            pointer-events: none;
+            z-index: 900;
+            opacity: 0.4;
+        }
+
+        /* --- 滚动容器 --- */
+        .snap-container {
+            height: 100vh;
+            width: 100vw;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            background: var(--c-black);
+        }
+
+        section {
+            height: 100vh;
+            width: 100%;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 4px solid var(--c-black);
+            background: var(--c-white);
+            color: var(--c-black);
+            perspective: 1000px;
+        }
+
+        /* --- 视觉元素 --- */
+        .typography-huge {
+            font-size: 12vh;
+            line-height: 0.85;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -3px;
+            position: relative;
+            z-index: 10;
+            mix-blend-mode: exclusion;
+            color: var(--c-white);
+        }
+
+        .data-block {
+            font-size: 18vh;
+            font-weight: 900;
+            color: var(--c-blue);
+            line-height: 1;
+            position: relative;
+            text-shadow: 4px 4px 0px var(--c-acid);
+        }
+
+        .sticker {
+            background: var(--c-black);
+            color: var(--c-white);
+            padding: 5px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-block;
+            transform: rotate(-3deg);
+            border: 2px solid var(--c-white);
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .desc-text {
+            font-size: 16px;
+            line-height: 1.6;
+            max-width: 80%;
+            font-weight: bold;
+            background: var(--c-white);
+            padding: 10px;
+            border: 2px solid var(--c-black);
+            margin-top: 20px;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* --- 基础动画 --- */
+        .anim-slam {
+            opacity: 0;
+            transform: translateY(100px) scale(0.9);
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.6s ease;
+        }
+        .active .anim-slam { opacity: 1; transform: translateY(0) scale(1); }
+
+        .anim-slide-in {
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: all 0.5s ease-out 0.2s;
+        }
+        .active .anim-slide-in { opacity: 1; transform: translateX(0); }
+
+        .anim-fade { opacity: 0; transition: opacity 0.5s ease 0.5s; }
+        .active .anim-fade { opacity: 1; }
+
+        /* --- 页面样式 --- */
+        #s1 { background: var(--c-blue); align-items: flex-start; padding: 40px; }
+        #s1 .typography-huge { color: var(--c-acid); mix-blend-mode: normal; text-shadow: 2px 2px 0 #000; }
+        
+        #s3 { background: repeating-linear-gradient(45deg, #fff, #fff 10px, #eee 10px, #eee 20px); }
+        .stamp-fail {
+            border: 5px solid var(--c-red); color: var(--c-red); font-size: 40px; padding: 10px 20px;
+            transform: rotate(15deg) scale(2); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.6s;
+        }
+        .active .stamp-fail { opacity: 1; transform: rotate(15deg) scale(1); }
+
+        #s6 { background: var(--c-red); color: black; }
+        .shake-container { border: 10px solid black; padding: 40px; background: var(--c-red); transform-origin: center; }
+        .active .shake-container { animation: rough-shake 0.2s infinite; }
+        @keyframes rough-shake {
+            0% { transform: translate(2px, 2px); } 25% { transform: translate(-2px, -2px); }
+            50% { transform: translate(-2px, 2px); } 75% { transform: translate(2px, -2px); } 100% { transform: translate(0, 0); }
+        }
+
+        #s8 { background: var(--c-black); color: var(--c-white); }
+
+        /* --- 终极陷阱层 (重构) --- */
+        #trap-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: black;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s ease-in; /* 瞬间出现 */
+            overflow: hidden;
+        }
+        
+        #trap-layer.visible {
+            opacity: 1;
+            pointer-events: auto;
+            animation: pulse-red 0.5s infinite alternate; /* 压迫的红光脉冲 */
+        }
+        
+        @keyframes pulse-red {
+            from { background: black; }
+            to { background: #1a0000; }
+        }
+
+        /* 巨大的凝视之眼 */
+        .the-eye {
+            width: 0; height: 0; /* 初始不可见 */
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 50px var(--c-red);
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        #trap-layer.visible .the-eye {
+            width: 200px; height: 200px;
+            animation: eye-watch 3s infinite ease-in-out;
+        }
+
+        /* 瞳孔 */
+        .the-eye::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px; height: 20px;
+            background: black;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        #trap-layer.visible .the-eye::after {
+            animation: pupil-shrink 0.2s infinite alternate; /* 瞳孔疯狂收缩 */
+        }
+
+        @keyframes pupil-shrink {
+            from { width: 100px; height: 100px; }
+            to { width: 20px; height: 20px; }
+        }
+
+        @keyframes eye-watch {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 100px var(--c-red); }
+        }
+
+        /* 压迫文字 */
+        .pressure-text {
+            position: absolute;
+            font-size: 15vw;
+            font-weight: 900;
+            color: var(--c-red);
+            text-align: center;
+            opacity: 0;
+            line-height: 1;
+            text-transform: uppercase;
+            mix-blend-mode: difference;
+            width: 100%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-shadow: 2px 2px 0 white;
+            white-space: nowrap;
+        }
+
+        /* 故障文字特效 */
+        .glitch-text {
+            animation: glitch-anim 0.3s infinite;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(-50%, -50%) skew(0deg); }
+            20% { transform: translate(-52%, -50%) skew(-10deg); }
+            40% { transform: translate(-48%, -50%) skew(10deg); }
+            60% { transform: translate(-50%, -52%) skew(0deg); filter: invert(1); }
+            80% { transform: translate(-50%, -48%) skew(0deg); }
+            100% { transform: translate(-50%, -50%) skew(0deg); }
+        }
+
+        /* 背景弹幕 */
+        .bg-word {
+            position: absolute;
+            color: #330000;
+            font-weight: 900;
+            font-size: 50px;
+            z-index: -1;
+            opacity: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="texture-overlay"></div>
+
+<!-- 终极陷阱层 -->
+<div id="trap-layer">
+    <!-- 凝视之眼 -->
+    <div class="the-eye"></div>
+    
+    <!-- 核心逼问文字 -->
+    <div class="pressure-text" id="final-txt-1">还是</div>
+    <div class="pressure-text" id="final-txt-2">做不到</div>
+    <div class="pressure-text" id="final-txt-3">吗？</div>
+</div>
+
+<div class="snap-container">
+
+    <!-- 1. 封面 -->
+    <section id="s1">
+        <div class="sticker anim-slam">绝密档案 / 2025</div>
+        <div class="anim-slam" style="transition-delay: 0.1s;">
+            <div class="typography-huge">年度</div>
+            <div class="typography-huge" style="color:white; -webkit-text-stroke: 2px black; text-shadow:none;">打胶</div>
+            <div class="typography-huge">报告</div>
+        </div>
+        <div class="desc-text anim-slide-in" style="background: var(--c-black); color: var(--c-white); margin-top: 40px; border: none;">
+            TO: 曾天宇<br>
+            Warning: 内容过于真实
+        </div>
+        <div style="position: absolute; bottom: 20px; right: 20px; font-size: 80px; opacity: 0.2; transform: rotate(-10deg);">🔞</div>
+    </section>
+
+    <!-- 2. 总量 -->
+    <section id="s2">
+        <div class="sticker anim-slam" style="background: var(--c-blue);">TOTAL COUNT</div>
+        <div class="anim-slam" style="transition-delay: 0.1s; text-align: center;">
+            <div class="data-block">365</div>
+            <div style="font-size: 40px; font-weight: 900; margin-top: -20px; background: black; color: white; display: inline-block; padding: 0 10px;">TIMES</div>
+        </div>
+        <div class="desc-text anim-fade">
+            <span style="background: var(--c-acid);">容量: 2131 ml</span><br>
+            这大概是两瓶大瓶可乐的量。<br>
+            你这已经不是发电了，是水库泄洪。
+        </div>
+    </section>
+
+    <!-- 3. 失败记录 -->
+    <section id="s3">
+        <div style="font-size: 100px; position: absolute; opacity: 0.1; top: 10%; left: -20px;">FAILED</div>
+        <div class="anim-slam">
+            <h2 style="font-size: 30px; text-transform: uppercase;">Self Control</h2>
+            <div style="font-size: 14px; background: black; color: white; display: inline-block; padding: 2px;">STATUS CHECK</div>
+        </div>
+        <div class="anim-slam" style="margin: 40px 0; font-size: 24px; font-weight: bold; text-align: center;">
+            "这次打完就戒"
+        </div>
+        <div class="stamp-fail">51次 失败</div>
+        <div class="desc-text anim-fade">
+            坚持到了1月就放弃了？<br>
+            你的意志力比薯片还脆。
+        </div>
+    </section>
+
+    <!-- 4. 环保 -->
+    <section id="s4" style="background: var(--c-acid);">
+        <div style="position: absolute; width: 100%; height: 100%; overflow: hidden;">
+            <div style="font-size: 200px; position: absolute; bottom: -50px; right: -50px; opacity: 0.2;">🌳</div>
+        </div>
+        <div class="sticker anim-slam" style="background: black; color: var(--c-acid); transform: rotate(2deg);">ECO KILLER</div>
+        <div class="anim-slam" style="text-align: center;">
+            <div class="data-block" style="color: black; text-shadow: 2px 2px 0 white;">-1</div>
+            <div style="font-size: 30px; font-weight: bold;">TREE</div>
+        </div>
+        <div class="desc-text anim-fade" style="background: white;">
+            消耗纸张: 1,584 张<br>
+            恭喜，地球恨你。<br>
+            环保水平超越 82% 的伐木工。
+        </div>
+    </section>
+
+    <!-- 5. 极限 -->
+    <section id="s5">
+        <div class="anim-slam" style="width: 100%; padding: 20px;">
+            <div style="border: 4px solid black; padding: 20px; background: var(--c-blue); color: white;">
+                <div style="font-size: 12px; opacity: 0.7;">LONGEST SESSION</div>
+                <div style="font-size: 60px; font-weight: 900;">58:34</div>
+            </div>
+        </div>
+        <div class="anim-slam" style="width: 100%; padding: 0 20px; margin-top: -10px; transition-delay: 0.1s;">
+            <div style="border: 4px solid black; padding: 20px; background: white; border-top: none;">
+                <div style="font-size: 12px; color: #888;">VOLUME PEAK</div>
+                <div style="font-size: 50px; font-weight: 900; color: black;">4.84 L</div>
+            </div>
+        </div>
+        <div class="desc-text anim-fade">
+             平均时长30分钟。<br>
+             你是在进行一种苦行僧式的修行吗？
+        </div>
+    </section>
+
+    <!-- 6. 震动 (11.17) -->
+    <section id="s6">
+        <div class="shake-container anim-slam">
+            <h1 style="font-size: 60px; color: black; line-height: 1;">11.17</h1>
+            <div style="background: black; color: var(--c-red); font-size: 30px; font-weight: 900; text-align: center; padding: 5px;">
+                ⚠️ 警报
+            </div>
+        </div>
+        <div class="desc-text anim-fade" style="background: black; color: var(--c-red); border-color: var(--c-red);">
+            地点：宿舍床<br>
+            事件：床体共振<br>
+            结果：<span style="text-decoration: underline;">被舍友发现</span>
+        </div>
+    </section>
+
+    <!-- 7. 深夜 -->
+    <section id="s7" style="background: var(--c-black); color: white;">
+        <div class="sticker anim-slam" style="background: white; color: black;">LATE NIGHT</div>
+        <div class="anim-slam" style="text-align: left; width: 100%; padding: 40px;">
+            <div style="font-family: monospace; color: var(--c-acid); margin-bottom: 20px;">
+                > Accessing logs...<br>
+                > Videos: 4,568<br>
+                > Hours: 226
+            </div>
+            <h1 style="font-size: 50px; line-height: 1.1;">04:35 AM</h1>
+            <p style="color: #666; font-size: 20px;">07月21日</p>
+        </div>
+        <div class="desc-text anim-fade" style="background: #222; color: #ccc; border-color: #444;">
+            这么晚还在冲，<br>是有什么心事吗？
+        </div>
+    </section>
+
+    <!-- 8. 结局 -->
+    <section id="s8">
+        <div class="anim-slam">
+            <div style="font-size: 14px; letter-spacing: 5px; text-align: center; margin-bottom: 20px;">YOUR KEYWORD</div>
+            <div style="font-size: 100px; font-weight: 900; color: white; -webkit-text-stroke: 2px var(--c-acid);">纵欲</div>
+            <div style="font-size: 100px; font-weight: 900; color: var(--c-acid); opacity: 0.5; margin-top: -80px; margin-left: 10px; filter: blur(2px);">纵欲</div>
+        </div>
+
+        <div class="anim-fade" style="margin-top: 60px;">
+            <button onclick="triggerTrap()" style="
+                background: transparent; 
+                border: 2px solid white; 
+                color: white; 
+                padding: 15px 40px; 
+                font-size: 20px; 
+                font-weight: bold; 
+                text-transform: uppercase;
+                cursor: pointer;
+                box-shadow: 0 0 20px rgba(255,255,255,0.2);">
+                接受命运
+            </button>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    // --- 滚动监听 ---
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+                if(entry.target.id === 's6' && navigator.vibrate) {
+                    navigator.vibrate([200, 50, 200]);
+                }
+            } else {
+                entry.target.classList.remove('active');
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('section').forEach(section => {
+        observer.observe(section);
+    });
+
+    // --- 终极陷阱逻辑 ---
+    function triggerTrap() {
+        const trap = document.getElementById('trap-layer');
+        const t1 = document.getElementById('final-txt-1');
+        const t2 = document.getElementById('final-txt-2');
+        const t3 = document.getElementById('final-txt-3');
+
+        // 1. 震动 + 显示黑底
+        if(navigator.vibrate) navigator.vibrate([500]);
+        trap.classList.add('visible');
+
+        // 2. 随机生成背景诅咒文字 (增加压迫氛围)
+        for(let i=0; i<20; i++) {
+            const span = document.createElement('span');
+            span.classList.add('bg-word');
+            span.innerText = ['废物', '懦夫', 'FAIL', '色鬼', '虚无'][Math.floor(Math.random()*5)];
+            span.style.left = Math.random()*100 + 'vw';
+            span.style.top = Math.random()*100 + 'vh';
+            span.style.fontSize = (Math.random()*30 + 20) + 'px';
+            span.style.transform = `rotate(${Math.random()*360}deg)`;
+            trap.appendChild(span);
+            
+            // 随机闪现
+            setTimeout(() => {
+                span.style.opacity = 0.3;
+            }, Math.random() * 2000);
+        }
+
+        // 3. 节奏性显示核心逼问文字 (模拟心跳重击)
+        // 第一击："还是"
+        setTimeout(() => {
+            if(navigator.vibrate) navigator.vibrate(50);
+            t1.style.opacity = 1;
+            t1.style.transform = "translate(-50%, -50%) scale(1.5)"; // 放大
+            setTimeout(() => { t1.style.opacity = 0; }, 800); // 消失
+        }, 1000);
+
+        // 第二击："做不到" (故障效果)
+        setTimeout(() => {
+            if(navigator.vibrate) navigator.vibrate([50, 50]);
+            t2.classList.add('glitch-text');
+            t2.style.opacity = 1;
+            t2.style.fontSize = "20vw";
+            setTimeout(() => { t2.style.opacity = 0; }, 1000);
+        }, 2000);
+
+        // 终结击："吗？" (一直停留，变大)
+        setTimeout(() => {
+            if(navigator.vibrate) navigator.vibrate(500);
+            t3.style.opacity = 1;
+            t3.style.fontSize = "40vw";
+            t3.style.color = "white";
+            t3.style.textShadow = "0 0 20px red";
+        }, 3500);
+    }
+</script>
+
+</body>
+</html>
+
